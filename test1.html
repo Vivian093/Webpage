@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>1D Barcode Scanner (Capture & Decode)</title>
+  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+</head>
+<body>
+  <h2>1D Barcode Scanner</h2>
+
+  <!-- Live camera preview -->
+  <video id="video" autoplay playsinline style="width:400px; border:1px solid black;"></video>
+  <br><br>
+
+  <!-- Buttons -->
+  <button id="captureBtn">📸 Capture</button>
+  <button id="decodeBtn">🔍 Decode</button>
+  <br><br>
+
+  <!-- Captured frame -->
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="capturedImg" style="max-width:400px; border:1px solid black; display:none;" />
+  <p>Result: <span id="result"></span></p>
+
+  <script>
+    const video = document.getElementById("video");
+    const captureBtn = document.getElementById("captureBtn");
+    const decodeBtn = document.getElementById("decodeBtn");
+    const canvas = document.getElementById("canvas");
+    const capturedImg = document.getElementById("capturedImg");
+    const resultSpan = document.getElementById("result");
+
+    const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+
+    // Start camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => console.error("Camera error:", err));
+
+    // Capture button → grab current video frame
+    captureBtn.addEventListener("click", () => {
+      const ctx = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Show captured image
+      capturedImg.src = canvas.toDataURL("image/png");
+      capturedImg.style.display = "block";
+    });
+
+    // Decode button → decode from captured image
+    decodeBtn.addEventListener("click", async () => {
+      if (!capturedImg.src) {
+        resultSpan.textContent = "No image captured!";
+        return;
+      }
+      try {
+        const result = await codeReader.decodeFromImage(undefined, capturedImg);
+        resultSpan.textContent = result.getText();
+      } catch (err) {
+        console.error("Decoding failed:", err);
+        resultSpan.textContent = "No barcode detected";
+      }
+    });
+  </script>
+</body>
+</html>
